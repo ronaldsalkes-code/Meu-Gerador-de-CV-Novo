@@ -4,149 +4,136 @@ import type { UserProfile, ResumeData } from '@/lib/types'
 export const maxDuration = 60
 
 const profileInstructions: Record<UserProfile, string> = {
-  'first-job': `
-    - Tom: Entusiasta, proativo, focado em potencial
-    - Verbos: Colaborei, Apoiei, Aprendi, Desenvolvi, Participei
-    - Destaque: Projetos acadêmicos, voluntariado, cursos
-    - Foco: Soft skills e vontade de aprender
-  `,
-  junior: `
-    - Tom: Técnico, em crescimento, detalhista
-    - Verbos: Desenvolvi, Implementei, Contribuí, Apoiei, Aprendi
-    - Destaque: Tecnologias específicas, projetos completos
-    - Foco: Habilidades técnicas e entregas
-  `,
-  'mid-level': `
-    - Tom: Profissional, orientado a resultados
-    - Verbos: Implementei, Otimizei, Liderei, Aumentei, Reduzi
-    - Destaque: Projetos complexos, métricas, impacto
-    - Foco: Resultados quantificáveis e liderança técnica
-  `,
-  senior: `
-    - Tom: Estratégico, autoritativo, mentor
-    - Verbos: Arquitetei, Transformei, Mentorizei, Estabeleci, Dirigi
-    - Destaque: Decisões técnicas, arquitetura, mentoria
-    - Foco: Impacto de longo prazo e liderança
-  `,
-  executive: `
-    - Tom: Visionário, executivo, transformacional
-    - Verbos: Dirigi, Transformei, Expandi, Consolidei, Estabeleci
-    - Destaque: P&L, crescimento de receita, transformação
-    - Foco: Impacto no negócio e visão estratégica
-  `,
-  freelancer: `
-    - Tom: Especialista, autônomo, versátil
-    - Verbos: Entreguei, Desenvolvi, Consultei, Solucionei
-    - Destaque: Variedade de projetos e clientes
-    - Foco: Resultados para clientes e especialização
-  `,
-  'career-transition': `
-    - Tom: Adaptável, motivado, em evolução
-    - Verbos: Transicionei, Apliquei, Adaptei, Desenvolvi
-    - Destaque: Habilidades transferíveis
-    - Foco: Ponte entre carreira anterior e nova área
-  `,
-  'returning-to-market': `
-    - Tom: Atualizado, preparado, motivado
-    - Verbos: Atualizei, Retomei, Desenvolvi, Preparei
-    - Destaque: Upskilling durante gap
-    - Foco: Experiência passada + preparação atual
-  `,
+  'first-job': `Tom entusiasta e proativo. Verbos: Colaborei, Apoiei, Desenvolvi, Participei, Aprendi. Destaque projetos acadêmicos, voluntariado e soft skills como trabalho em equipe.`,
+  
+  junior: `Tom técnico e em crescimento. Verbos: Implementei, Desenvolvi, Contribuí, Apoiei, Otimizei. Destaque tecnologias específicas, projetos completos e entregas mensuráveis.`,
+  
+  'mid-level': `Tom profissional e orientado a resultados. Verbos: Liderei, Implementei, Otimizei, Aumentei, Reduzi. Destaque projetos complexos, métricas de impacto e liderança técnica.`,
+  
+  senior: `Tom estratégico e autoritativo. Verbos: Arquitetei, Transformei, Mentorizei, Estabeleci, Dirigi. Destaque decisões técnicas estratégicas, arquitetura de sistemas e mentoria de times.`,
+  
+  executive: `Tom visionário e executivo. Verbos: Transformei, Expandi, Dirigi, Consolidei, Estabeleci. Destaque P&L, crescimento de receita, transformação organizacional e visão estratégica.`,
+  
+  freelancer: `Tom especialista e versátil. Verbos: Entreguei, Desenvolvi, Consultei, Solucionei, Implementei. Destaque diversidade de projetos, clientes atendidos e especialização técnica.`,
+  
+  'career-transition': `Tom adaptável e motivado. Verbos: Transicionei, Apliquei, Adaptei, Desenvolvi, Preparei. Destaque habilidades transferíveis, aprendizado recente e ponte entre carreiras.`,
+  
+  'returning-to-market': `Tom atualizado e preparado. Verbos: Retomei, Atualizei, Desenvolvi, Preparei, Recuperei. Destaque upskilling durante gap, experiência passada relevante e motivação para retorno.`,
 }
 
 export async function POST(req: Request) {
-  console.log('[API] Starting resume generation with OpenAI...')
+  console.log('[API] 🚀 Starting resume generation with OpenAI...')
   
   try {
     const body = await req.json()
     const { profile, resumeData }: { profile: UserProfile; resumeData: ResumeData } = body
     
-    console.log('[API] Profile:', profile)
-    console.log('[API] Name:', resumeData?.personalInfo?.fullName)
+    console.log('[API] 👤 Profile:', profile)
+    console.log('[API] 📝 Name:', resumeData?.personalInfo?.fullName)
+    console.log('[API] 💼 Experiences:', resumeData?.experiences?.length || 0)
 
     const apiKey = process.env.OPENAI_API_KEY
 
     if (!apiKey) {
-      console.error('[API] OPENAI_API_KEY not configured')
+      console.error('[API] ❌ OPENAI_API_KEY not configured')
       return Response.json(
-        { 
-          success: false, 
-          error: 'Configure OPENAI_API_KEY nas variáveis de ambiente' 
-        },
+        { success: false, error: 'Configure OPENAI_API_KEY nas variáveis de ambiente do projeto' },
         { status: 500 }
       )
     }
 
+    console.log('[API] ✅ API Key found, initializing OpenAI client...')
     const openai = new OpenAI({ apiKey })
 
     // ============================================
-    // PROMPT OTIMIZADO - GERA CONTEÚDO ESTRUTURADO
+    // PROMPT OTIMIZADO - GERA JSON ESTRUTURADO
     // ============================================
 
     const systemPrompt = `Você é um especialista em otimização de currículos profissionais em português brasileiro.
+Sua tarefa é criar conteúdo profissional, impactante e adequado ao nível do candidato.
 
-IMPORTANTE: Retorne APENAS JSON válido, sem markdown, sem explicações.
+IMPORTANTE: Retorne APENAS JSON válido, sem markdown (```json), sem explicações extras.
 
-Estrutura EXATA do JSON:
+Estrutura EXATA do JSON que você deve retornar:
 {
-  "summary": "string com resumo profissional de 3-4 linhas",
+  "summary": "string com resumo profissional de 3-4 linhas impactantes",
   "experiences": [
     {
-      "position": "cargo original",
-      "company": "empresa original",
-      "period": "período original",
       "bullets": [
-        "Bullet point 1 com verbo de ação e resultado",
-        "Bullet point 2 com métrica se possível",
-        "Bullet point 3 destacando responsabilidade chave"
+        "Bullet point 1 com verbo de ação e resultado quantificado",
+        "Bullet point 2 destacando responsabilidade chave",
+        "Bullet point 3 com métrica ou impacto se possível"
       ]
     }
   ]
-}`
+}
+
+REGRAS PARA BULLETS:
+- Começar SEMPRE com verbo de ação no passado
+- Incluir números/métricas quando possível (%, R$, tempo, quantidade)
+- Ser específico e concreto, não genérico
+- Cada bullet deve ter 1-2 linhas no máximo
+- NÃO incluir o símbolo "•" ou "-" no início (será adicionado automaticamente)`
 
     const userPrompt = `PERFIL DO CANDIDATO: ${profile}
 
-INSTRUÇÕES PARA ESTE PERFIL:
+INSTRUÇÕES ESPECÍFICAS PARA ESTE PERFIL:
 ${profileInstructions[profile]}
 
-DADOS:
+DADOS DO CANDIDATO:
 Nome: ${resumeData.personalInfo.fullName}
-Resumo atual: ${resumeData.summary || 'Não fornecido - CRIE UM IMPACTANTE'}
+Área: ${resumeData.personalInfo.location || 'Não especificada'}
+Resumo atual: ${resumeData.summary || 'Não fornecido - CRIE UM RESUMO IMPACTANTE'}
 
-EXPERIÊNCIAS:
+EXPERIÊNCIAS PROFISSIONAIS:
 ${resumeData.experiences.map((exp, i) => `
 Experiência ${i + 1}:
 - Cargo: ${exp.position}
 - Empresa: ${exp.company}
 - Período: ${exp.startDate} - ${exp.current ? 'Presente' : exp.endDate || 'N/A'}
-- Descrição original: ${exp.description || 'Não fornecido - CRIE baseado no cargo'}
+- Local: ${exp.location || 'Não especificado'}
+- Descrição original: ${exp.description || 'Não fornecido - CRIE bullets baseado no cargo e empresa'}
 `).join('\n')}
 
-HABILIDADES: ${resumeData.skills.join(', ')}
+FORMAÇÃO ACADÊMICA:
+${resumeData.education.map((edu, i) => `${i + 1}. ${edu.degree} em ${edu.field} - ${edu.institution}`).join('\n')}
 
-FORMAÇÃO: ${resumeData.education.map(e => `${e.degree} em ${e.field}`).join(', ')}
+HABILIDADES TÉCNICAS: ${resumeData.skills.join(', ')}
 
-TAREFA:
-1. Crie um RESUMO PROFISSIONAL de 3-4 linhas que:
-   - Destaque principais qualificações
-   - Use números/métricas se possível
-   - Mencione ${resumeData.skills.slice(0, 3).join(', ')}
-   - Seja específico ao perfil ${profile}
+${resumeData.languages.length > 0 ? `IDIOMAS: ${resumeData.languages.map(l => `${l.language} (${l.level})`).join(', ')}` : ''}
 
-2. Para CADA experiência, gere 3-4 bullet points que:
-   - Comecem com verbo de ação no passado
-   - Incluam resultados/métricas quando possível (%, R$, tempo)
-   - Sejam específicos e concretos
-   - Destaquem impacto e responsabilidades
+TAREFA COMPLETA:
 
-EXEMPLOS DE BULLETS BONS:
-- "Desenvolvi sistema de autenticação OAuth2 que reduziu tempo de login em 40%"
-- "Liderei equipe de 5 desenvolvedores entregando 12 features em 3 sprints"
-- "Implementei pipeline CI/CD com GitHub Actions reduzindo deploys de 2h para 15min"
+1️⃣ RESUMO PROFISSIONAL (campo "summary"):
+Crie um resumo profissional de 3-4 linhas que:
+- Destaque as principais qualificações e experiência
+- Mencione as top 3 habilidades: ${resumeData.skills.slice(0, 3).join(', ')}
+- Use números/métricas se aplicável (anos de experiência, projetos, etc)
+- Seja específico ao perfil "${profile}"
+- Use tom ${profile === 'first-job' ? 'entusiasta e proativo' : profile === 'executive' ? 'executivo e estratégico' : 'profissional e objetivo'}
 
-RETORNE APENAS O JSON, SEM TEXTO ADICIONAL.`
+2️⃣ EXPERIÊNCIAS OTIMIZADAS (campo "experiences"):
+Para CADA uma das ${resumeData.experiences.length} experiências listadas acima, gere um objeto com campo "bullets" contendo array de 3-4 bullets que:
+- Comecem com verbo de ação apropriado ao nível do perfil
+- Incluam resultados quantificáveis quando possível (aumento de %, redução de tempo, economia de R$, número de usuários, etc)
+- Sejam específicos e concretos (tecnologias, metodologias, ferramentas usadas)
+- Destaquem impacto e responsabilidades principais
+-Tenham comprimento adequado (1-2 linhas cada)
 
-    console.log('[API] Calling OpenAI API...')
+EXEMPLOS DE BULLETS EXCELENTES:
+✅ "Desenvolvi sistema de autenticação OAuth2 que reduziu tempo de login de 5s para 1.2s, impactando 50mil usuários"
+✅ "Liderei equipe de 5 desenvolvedores entregando 12 features críticas em 3 sprints com 98% de cobertura de testes"
+✅ "Implementei pipeline CI/CD com GitHub Actions e Docker, reduzindo tempo de deploy de 2h para 15min"
+✅ "Otimizei queries SQL que melhoraram performance do dashboard em 60% e reduziram custos de servidor em R$ 5mil/mês"
+
+EXEMPLOS DE BULLETS RUINS (NÃO FAZER):
+❌ "Trabalhei em projetos diversos" (muito genérico)
+❌ "Ajudei a equipe" (não especifica o que fez)
+❌ "Usei React e Node.js" (apenas lista tecnologias sem contexto)
+
+RETORNE APENAS O JSON, SEM NENHUM TEXTO ADICIONAL ANTES OU DEPOIS.`
+
+    console.log('[API] 📤 Sending request to OpenAI (gpt-4o)...')
     
     const completion = await openai.chat.completions.create({
       model: 'gpt-4o',
@@ -161,85 +148,123 @@ RETORNE APENAS O JSON, SEM TEXTO ADICIONAL.`
 
     const text = completion.choices[0]?.message?.content || ''
     
-    console.log('[API] OpenAI response length:', text.length)
-    console.log('[API] Tokens used:', completion.usage?.total_tokens)
+    console.log('[API] 📥 Response received!')
+    console.log('[API] 📊 Response length:', text.length, 'chars')
+    console.log('[API] 🪙 Tokens used:', completion.usage?.total_tokens || 0)
 
     if (!text || text.length < 50) {
-      throw new Error('Resposta da IA muito curta')
+      throw new Error('Resposta da IA muito curta ou vazia')
     }
 
     // Parse do JSON retornado
     let generatedContent
     try {
       generatedContent = JSON.parse(text)
+      console.log('[API] ✅ JSON parsed successfully')
     } catch (parseError) {
-      console.error('[API] Failed to parse JSON:', text)
+      console.error('[API] ❌ Failed to parse JSON:', text.substring(0, 200))
       throw new Error('IA não retornou JSON válido')
     }
 
     // Validar estrutura
-    if (!generatedContent.summary || !generatedContent.experiences) {
-      throw new Error('JSON retornado está incompleto')
+    if (!generatedContent.summary) {
+      console.error('[API] ❌ Missing summary field')
+      throw new Error('JSON sem campo "summary"')
+    }
+    
+    if (!generatedContent.experiences || !Array.isArray(generatedContent.experiences)) {
+      console.error('[API] ❌ Missing or invalid experiences field')
+      throw new Error('JSON sem campo "experiences" válido')
     }
 
-    console.log('[API] Successfully generated structured content')
+    console.log('[API] ✅ Generated summary:', generatedContent.summary.substring(0, 100) + '...')
+    console.log('[API] ✅ Generated', generatedContent.experiences.length, 'experience descriptions')
 
     // ============================================
     // MESCLAR CONTEÚDO GERADO COM DADOS ORIGINAIS
     // ============================================
 
-    const enhancedResumeData = {
+    const enhancedResumeData: ResumeData = {
       ...resumeData,
-      summary: generatedContent.summary, // Resumo otimizado
+      summary: generatedContent.summary, // ← Resumo otimizado pela IA
       experiences: resumeData.experiences.map((exp, index) => {
         const generated = generatedContent.experiences[index]
-        return {
-          ...exp,
-          description: generated?.bullets ? 
-            generated.bullets.join('\n• ') : // Bullets formatados
-            exp.description // Fallback para descrição original
+        
+        if (generated && generated.bullets && Array.isArray(generated.bullets)) {
+          // Formatar bullets com "• " no início
+          const formattedDescription = generated.bullets
+            .filter((bullet: string) => bullet && bullet.trim().length > 0)
+            .map((bullet: string) => {
+              // Remover "• " se já existir no começo
+              const cleanBullet = bullet.trim().replace(/^[•\-\*]\s*/, '')
+              return `• ${cleanBullet}`
+            })
+            .join('\n')
+          
+          return {
+            ...exp,
+            description: formattedDescription || exp.description // Fallback para original
+          }
         }
+        
+        // Se não gerou bullets para esta experiência, manter original
+        return exp
       })
     }
 
+    console.log('[API] ✅ Resume data enhanced successfully!')
+    console.log('[API] 📝 New summary length:', enhancedResumeData.summary.length)
+    console.log('[API] 💼 Enhanced experiences:', enhancedResumeData.experiences.length)
+
     return Response.json({
       success: true,
-      resumeData: enhancedResumeData,
+      resumeData: enhancedResumeData, // ← DADOS OTIMIZADOS COMPLETOS
       profile,
       generatedAt: new Date().toISOString(),
       tokensUsed: completion.usage?.total_tokens || 0,
     })
 
   } catch (error) {
-    console.error('[API] Resume generation error:', error)
+    console.error('[API] ❌ Resume generation error:', error)
     
     const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido'
     
+    // Tratamento específico de erros da OpenAI
     if (error instanceof OpenAI.APIError) {
-      console.error('[API] OpenAI Error:', {
+      console.error('[API] 🔴 OpenAI API Error:', {
         status: error.status,
         message: error.message,
+        code: error.code,
+        type: error.type,
       })
       
       if (error.status === 401) {
         return Response.json(
-          { error: 'API Key da OpenAI inválida', success: false },
+          { error: 'Chave de API da OpenAI inválida. Verifique OPENAI_API_KEY.', success: false },
           { status: 401 }
         )
       }
       
       if (error.status === 429) {
         return Response.json(
-          { error: 'Limite de requisições excedido. Aguarde alguns segundos.', success: false },
+          { error: 'Limite de requisições da OpenAI excedido. Aguarde alguns segundos e tente novamente.', success: false },
           { status: 429 }
+        )
+      }
+      
+      if (error.status === 500) {
+        return Response.json(
+          { error: 'Erro interno da OpenAI. Tente novamente em alguns instantes.', success: false },
+          { status: 500 }
         )
       }
     }
     
     return Response.json(
       { 
-        error: `Erro ao gerar: ${errorMessage}`,
+        error: `Falha ao gerar currículo: ${errorMessage}`,
         success: false,
+        details: errorMessage
       },
       { status: 500 }
     )
