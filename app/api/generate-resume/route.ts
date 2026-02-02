@@ -5,44 +5,52 @@ export const maxDuration = 60
 
 const profileInstructions: Record<UserProfile, string> = {
   'first-job': `
-    - Foque em educação, projetos acadêmicos e habilidades transferíveis
-    - Destaque cursos, certificações e atividades extracurriculares
-    - Enfatize entusiasmo, vontade de aprender e soft skills
+    - Tom: Entusiasta, proativo, focado em potencial
+    - Verbos: Colaborei, Apoiei, Aprendi, Desenvolvi, Participei
+    - Destaque: Projetos acadêmicos, voluntariado, cursos
+    - Foco: Soft skills e vontade de aprender
   `,
   junior: `
-    - Destaque 1-3 anos de experiência profissional
-    - Foque em tecnologias específicas e projetos concretos
-    - Mostre crescimento e aprendizado rápido
+    - Tom: Técnico, em crescimento, detalhista
+    - Verbos: Desenvolvi, Implementei, Contribuí, Apoiei, Aprendi
+    - Destaque: Tecnologias específicas, projetos completos
+    - Foco: Habilidades técnicas e entregas
   `,
   'mid-level': `
-    - Enfatize 3-5 anos de experiência sólida
-    - Destaque projetos complexos e liderança técnica
-    - Quantifique resultados e impacto nos negócios
+    - Tom: Profissional, orientado a resultados
+    - Verbos: Implementei, Otimizei, Liderei, Aumentei, Reduzi
+    - Destaque: Projetos complexos, métricas, impacto
+    - Foco: Resultados quantificáveis e liderança técnica
   `,
   senior: `
-    - Foque em 5+ anos de experiência e expertise técnica profunda
-    - Destaque arquitetura de sistemas e decisões técnicas estratégicas
-    - Enfatize liderança técnica e mentoria
+    - Tom: Estratégico, autoritativo, mentor
+    - Verbos: Arquitetei, Transformei, Mentorizei, Estabeleci, Dirigi
+    - Destaque: Decisões técnicas, arquitetura, mentoria
+    - Foco: Impacto de longo prazo e liderança
   `,
   executive: `
-    - Destaque liderança executiva e gestão estratégica
-    - Foque em transformação organizacional e resultados de negócio
-    - Enfatize P&L, orçamentos e crescimento de receita
+    - Tom: Visionário, executivo, transformacional
+    - Verbos: Dirigi, Transformei, Expandi, Consolidei, Estabeleci
+    - Destaque: P&L, crescimento de receita, transformação
+    - Foco: Impacto no negócio e visão estratégica
   `,
   freelancer: `
-    - Destaque diversidade de projetos e clientes
-    - Enfatize autonomia, gestão de projetos e resultados
-    - Mostre especializações e nichos de expertise
+    - Tom: Especialista, autônomo, versátil
+    - Verbos: Entreguei, Desenvolvi, Consultei, Solucionei
+    - Destaque: Variedade de projetos e clientes
+    - Foco: Resultados para clientes e especialização
   `,
   'career-transition': `
-    - Conecte experiência anterior com nova área de forma estratégica
-    - Destaque habilidades transferíveis e aprendizado recente
-    - Enfatize motivação e preparação para a transição
+    - Tom: Adaptável, motivado, em evolução
+    - Verbos: Transicionei, Apliquei, Adaptei, Desenvolvi
+    - Destaque: Habilidades transferíveis
+    - Foco: Ponte entre carreira anterior e nova área
   `,
   'returning-to-market': `
-    - Aborde o gap de forma positiva focando em atualizações
-    - Destaque experiências relevantes anteriores
-    - Enfatize cursos, projetos pessoais ou trabalho voluntário recente
+    - Tom: Atualizado, preparado, motivado
+    - Verbos: Atualizei, Retomei, Desenvolvi, Preparei
+    - Destaque: Upskilling durante gap
+    - Foco: Experiência passada + preparação atual
   `,
 }
 
@@ -56,7 +64,6 @@ export async function POST(req: Request) {
     console.log('[API] Profile:', profile)
     console.log('[API] Name:', resumeData?.personalInfo?.fullName)
 
-    // Verificar se a API key está configurada
     const apiKey = process.env.OPENAI_API_KEY
 
     if (!apiKey) {
@@ -64,107 +71,140 @@ export async function POST(req: Request) {
       return Response.json(
         { 
           success: false, 
-          error: 'OpenAI API key não configurada. Por favor, configure a variável de ambiente OPENAI_API_KEY nas configurações do projeto.' 
+          error: 'Configure OPENAI_API_KEY nas variáveis de ambiente' 
         },
         { status: 500 }
       )
     }
 
-    console.log('[API] API Key found, initializing OpenAI client...')
-    
-    console.log('[API] OpenAI API Key found, initializing client...')
+    const openai = new OpenAI({ apiKey })
 
-    // Inicializar o cliente OpenAI
-    const openai = new OpenAI({
-      apiKey: apiKey,
-    })
+    // ============================================
+    // PROMPT OTIMIZADO - GERA CONTEÚDO ESTRUTURADO
+    // ============================================
 
-    const prompt = `Você é um especialista em recrutamento e redação de currículos profissionais.
-Crie um RESUMO PROFISSIONAL completo e impactante para o seguinte candidato.
+    const systemPrompt = `Você é um especialista em otimização de currículos profissionais em português brasileiro.
 
-PERFIL: ${profile}
-INSTRUÇÕES ESPECÍFICAS: ${profileInstructions[profile]}
+IMPORTANTE: Retorne APENAS JSON válido, sem markdown, sem explicações.
 
-DADOS DO CANDIDATO:
-- Nome: ${resumeData.personalInfo.fullName}
-- Email: ${resumeData.personalInfo.email}
-- Telefone: ${resumeData.personalInfo.phone}
-- Localização: ${resumeData.personalInfo.location}
-${resumeData.personalInfo.linkedIn ? `- LinkedIn: ${resumeData.personalInfo.linkedIn}` : ''}
-${resumeData.personalInfo.portfolio ? `- Portfolio: ${resumeData.personalInfo.portfolio}` : ''}
-${resumeData.personalInfo.github ? `- GitHub: ${resumeData.personalInfo.github}` : ''}
+Estrutura EXATA do JSON:
+{
+  "summary": "string com resumo profissional de 3-4 linhas",
+  "experiences": [
+    {
+      "position": "cargo original",
+      "company": "empresa original",
+      "period": "período original",
+      "bullets": [
+        "Bullet point 1 com verbo de ação e resultado",
+        "Bullet point 2 com métrica se possível",
+        "Bullet point 3 destacando responsabilidade chave"
+      ]
+    }
+  ]
+}`
 
-RESUMO ATUAL: ${resumeData.summary || 'Não fornecido'}
+    const userPrompt = `PERFIL DO CANDIDATO: ${profile}
+
+INSTRUÇÕES PARA ESTE PERFIL:
+${profileInstructions[profile]}
+
+DADOS:
+Nome: ${resumeData.personalInfo.fullName}
+Resumo atual: ${resumeData.summary || 'Não fornecido - CRIE UM IMPACTANTE'}
 
 EXPERIÊNCIAS:
 ${resumeData.experiences.map((exp, i) => `
-${i + 1}. ${exp.position} na ${exp.company}
-   Período: ${exp.startDate} - ${exp.current ? 'Presente' : exp.endDate || 'N/A'}
-   ${exp.location ? `Local: ${exp.location}` : ''}
-   ${exp.description || ''}
-`).join('\n')}
-
-FORMAÇÃO:
-${resumeData.education.map((edu, i) => `
-${i + 1}. ${edu.degree} em ${edu.field} - ${edu.institution}
-   Período: ${edu.startDate} - ${edu.current ? 'Cursando' : edu.endDate || 'N/A'}
-   ${edu.description || ''}
+Experiência ${i + 1}:
+- Cargo: ${exp.position}
+- Empresa: ${exp.company}
+- Período: ${exp.startDate} - ${exp.current ? 'Presente' : exp.endDate || 'N/A'}
+- Descrição original: ${exp.description || 'Não fornecido - CRIE baseado no cargo'}
 `).join('\n')}
 
 HABILIDADES: ${resumeData.skills.join(', ')}
 
-${resumeData.languages.length > 0 ? `IDIOMAS: ${resumeData.languages.map(l => `${l.language} (${l.level})`).join(', ')}` : ''}
-
-${resumeData.certifications.length > 0 ? `CERTIFICAÇÕES: ${resumeData.certifications.map(c => `${c.name} - ${c.issuer} (${c.date})`).join(', ')}` : ''}
+FORMAÇÃO: ${resumeData.education.map(e => `${e.degree} em ${e.field}`).join(', ')}
 
 TAREFA:
-Gere um texto profissional completo para o currículo deste candidato. O texto deve incluir:
+1. Crie um RESUMO PROFISSIONAL de 3-4 linhas que:
+   - Destaque principais qualificações
+   - Use números/métricas se possível
+   - Mencione ${resumeData.skills.slice(0, 3).join(', ')}
+   - Seja específico ao perfil ${profile}
 
-1. RESUMO PROFISSIONAL (3-4 frases impactantes destacando principais qualificações)
-2. DESCRIÇÃO EXPANDIDA das experiências com bullet points usando verbos de ação
-3. DESTAQUES de habilidades técnicas e soft skills
+2. Para CADA experiência, gere 3-4 bullet points que:
+   - Comecem com verbo de ação no passado
+   - Incluam resultados/métricas quando possível (%, R$, tempo)
+   - Sejam específicos e concretos
+   - Destaquem impacto e responsabilidades
 
-Use linguagem profissional, verbos de ação (Desenvolveu, Liderou, Implementou, Otimizou), e quantifique resultados quando possível.
+EXEMPLOS DE BULLETS BONS:
+- "Desenvolvi sistema de autenticação OAuth2 que reduziu tempo de login em 40%"
+- "Liderei equipe de 5 desenvolvedores entregando 12 features em 3 sprints"
+- "Implementei pipeline CI/CD com GitHub Actions reduzindo deploys de 2h para 15min"
 
-Retorne APENAS o texto, sem formatação markdown, sem títulos de seção, apenas parágrafos fluidos e profissionais.`
+RETORNE APENAS O JSON, SEM TEXTO ADICIONAL.`
 
-    console.log('[API] Calling OpenAI API (gpt-4o)...')
+    console.log('[API] Calling OpenAI API...')
     
-    // Chamar a API da OpenAI
     const completion = await openai.chat.completions.create({
       model: 'gpt-4o',
       messages: [
-        {
-          role: 'system',
-          content: 'Você é um especialista em recrutamento e redação de currículos profissionais em português brasileiro. Você escreve de forma clara, objetiva e impactante.'
-        },
-        {
-          role: 'user',
-          content: prompt
-        }
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: userPrompt }
       ],
       temperature: 0.7,
-      max_tokens: 2048,
+      max_tokens: 2500,
+      response_format: { type: 'json_object' } // Força retorno JSON
     })
 
     const text = completion.choices[0]?.message?.content || ''
     
-    console.log('[API] OpenAI response received, length:', text.length)
-    console.log('[API] Content preview:', text.substring(0, 200))
-    console.log('[API] Tokens used:', completion.usage?.total_tokens || 0)
+    console.log('[API] OpenAI response length:', text.length)
+    console.log('[API] Tokens used:', completion.usage?.total_tokens)
 
     if (!text || text.length < 50) {
-      console.error('[API] Generated content too short or empty')
-      return Response.json(
-        { error: 'Conteúdo gerado está vazio ou muito curto', success: false },
-        { status: 500 }
-      )
+      throw new Error('Resposta da IA muito curta')
     }
 
-    // Retornar JSON com o conteúdo gerado
+    // Parse do JSON retornado
+    let generatedContent
+    try {
+      generatedContent = JSON.parse(text)
+    } catch (parseError) {
+      console.error('[API] Failed to parse JSON:', text)
+      throw new Error('IA não retornou JSON válido')
+    }
+
+    // Validar estrutura
+    if (!generatedContent.summary || !generatedContent.experiences) {
+      throw new Error('JSON retornado está incompleto')
+    }
+
+    console.log('[API] Successfully generated structured content')
+
+    // ============================================
+    // MESCLAR CONTEÚDO GERADO COM DADOS ORIGINAIS
+    // ============================================
+
+    const enhancedResumeData = {
+      ...resumeData,
+      summary: generatedContent.summary, // Resumo otimizado
+      experiences: resumeData.experiences.map((exp, index) => {
+        const generated = generatedContent.experiences[index]
+        return {
+          ...exp,
+          description: generated?.bullets ? 
+            generated.bullets.join('\n• ') : // Bullets formatados
+            exp.description // Fallback para descrição original
+        }
+      })
+    }
+
     return Response.json({
       success: true,
-      content: text,
+      resumeData: enhancedResumeData,
       profile,
       generatedAt: new Date().toISOString(),
       tokensUsed: completion.usage?.total_tokens || 0,
@@ -175,31 +215,22 @@ Retorne APENAS o texto, sem formatação markdown, sem títulos de seção, apen
     
     const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido'
     
-    // Tratamento específico de erros da OpenAI
     if (error instanceof OpenAI.APIError) {
-      console.error('[API] OpenAI API Error:', {
+      console.error('[API] OpenAI Error:', {
         status: error.status,
         message: error.message,
-        code: error.code,
-        type: error.type,
       })
       
       if (error.status === 401) {
         return Response.json(
-          { 
-            error: 'Chave de API da OpenAI inválida. Verifique OPENAI_API_KEY.',
-            success: false,
-          },
+          { error: 'API Key da OpenAI inválida', success: false },
           { status: 401 }
         )
       }
       
       if (error.status === 429) {
         return Response.json(
-          { 
-            error: 'Limite de taxa da OpenAI excedido. Tente novamente em alguns segundos.',
-            success: false,
-          },
+          { error: 'Limite de requisições excedido. Aguarde alguns segundos.', success: false },
           { status: 429 }
         )
       }
@@ -207,9 +238,8 @@ Retorne APENAS o texto, sem formatação markdown, sem títulos de seção, apen
     
     return Response.json(
       { 
-        error: `Falha ao gerar currículo: ${errorMessage}`,
+        error: `Erro ao gerar: ${errorMessage}`,
         success: false,
-        details: errorMessage
       },
       { status: 500 }
     )
